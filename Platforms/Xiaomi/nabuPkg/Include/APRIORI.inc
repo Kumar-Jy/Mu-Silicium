@@ -93,7 +93,8 @@ APRIORI DXE {
   INF MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
   INF MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
 
-  INF Binaries/nabu/QcomPkg/Drivers/UsbConfigDxe/UsbConfigDxe.inf
+# INF Binaries/nabu/QcomPkg/Drivers/UsbConfigDxe/UsbConfigDxe.inf
+  INF PatchedBinaries\nabu\QcomPkg\Drivers\UsbConfigDxe/UsbConfigDxe.inf
   INF Binaries/nabu/QcomPkg/Drivers/TsensDxe/TsensDxe.inf
   INF Binaries/nabu/QcomPkg/Drivers/LimitsDxe/LimitsDxe.inf
   INF Binaries/nabu/QcomPkg/Drivers/GpiDxe/GpiDxe.inf
