@@ -91,7 +91,8 @@
 
   INF Binaries/nabu/QcomPkg/Drivers/UsbMsdDxe/UsbMsdDxe.inf
   INF Binaries/nabu/QcomPkg/Drivers/UsbDeviceDxe/UsbDeviceDxe.inf
-  INF Binaries/nabu/QcomPkg/Drivers/UsbConfigDxe/UsbConfigDxe.inf
+# INF Binaries/nabu/QcomPkg/Drivers/UsbConfigDxe/UsbConfigDxe.inf
+  INF PatchedBinaries\nabu\QcomPkg\Drivers\UsbConfigDxe/UsbConfigDxe.inf
   INF Binaries/nabu/QcomPkg/Drivers/HashDxe/HashDxe.inf
   INF Binaries/nabu/QcomPkg/Drivers/CipherDxe/CipherDxe.inf
   INF Binaries/nabu/QcomPkg/Drivers/RNGDxe/RngDxe.inf
