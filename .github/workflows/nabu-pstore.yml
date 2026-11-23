@@ -1,0 +1,119 @@
+name: Build nabu normal images and PStore FDs
+
+on:
+  push:
+    branches: ["nabu-Pstore"]
+    paths:
+      - '.github/workflows/nabu-pstore.yml'
+      - 'Binaries'
+      - 'Common/**'
+      - 'Mu_Basecore'
+      - 'MuPatches/**'
+      - 'Platforms/**'
+      - 'Resources/**'
+      - 'Silicon/**'
+      - 'Silicium-ACPI'
+      - 'build_uefi.py'
+      - 'setup_env.sh'
+  pull_request:
+    branches: ["nabu-Pstore"]
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/nabu-pstore.yml'
+      - 'Binaries'
+      - 'Common/**'
+      - 'Mu_Basecore'
+      - 'MuPatches/**'
+      - 'Platforms/**'
+      - 'Resources/**'
+      - 'Silicon/**'
+      - 'Silicium-ACPI'
+      - 'build_uefi.py'
+      - 'setup_env.sh'
+  workflow_dispatch:
+
+env:
+  CI_BUILD: true
+  CLANGPDB_AARCH64_PREFIX: aarch64-linux-gnu-
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: sb
+            secureboot: true
+            output: img
+          - variant: nsb
+            secureboot: false
+            output: img
+          - variant: sb
+            secureboot: true
+            output: fd
+          - variant: nsb
+            secureboot: false
+            output: fd
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up build environment
+        run: bash ./setup_env.sh -p apt
+
+      - name: Remove PStore descriptor for normal image builds
+        if: matrix.output == 'img'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("Platforms/Xiaomi/nabuPkg/Library/MemoryMapLib/MemoryMapLib.c")
+          lines = path.read_text().splitlines(keepends=True)
+          kept = [line for line in lines if '"PStore"' not in line]
+          removed = len(lines) - len(kept)
+          if removed != 1:
+              raise SystemExit(f"Expected exactly one PStore descriptor, found {removed}")
+          path.write_text("".join(kept))
+          PY
+
+      - name: Build nabu ${{ matrix.variant }} ${{ matrix.output }} (RELEASE)
+        run: |
+          set -euo pipefail
+          SB_ARGS=()
+          if [[ "${{ matrix.secureboot }}" == "true" ]]; then
+            SB_ARGS=(-s)
+          fi
+          python3 build_uefi.py -d nabu -r RELEASE -c "${SB_ARGS[@]}"
+
+      - name: Stage ${{ matrix.variant }} ${{ matrix.output }} artifact
+        id: stage
+        run: |
+          set -euo pipefail
+          OUT="out"
+          mkdir -p "$OUT"
+
+          if [[ "${{ matrix.output }}" == "img" ]]; then
+            cp Mu-nabu.img "$OUT/Mu-nabu-${{ matrix.variant }}.img"
+            echo "name=nabu-${{ matrix.variant }}-normal-uefi-img" >> "$GITHUB_OUTPUT"
+          else
+            if [[ "${{ matrix.variant }}" == "sb" ]]; then
+              FD_NAME="SM8150_EFI_PStore_SB.fd"
+            else
+              FD_NAME="SM8150_EFI_PStore_nSB.fd"
+            fi
+            cp Build/nabuPkg/RELEASE_CLANGPDB/FV/SILICIUM_UEFI.fd "$OUT/$FD_NAME"
+            echo "name=nabu-pstore-${{ matrix.variant }}-fd" >> "$GITHUB_OUTPUT"
+          fi
+
+          (cd "$OUT" && sha256sum * > SHA256SUMS)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.stage.outputs.name }}
+          path: out/*
+          compression-level: 9
