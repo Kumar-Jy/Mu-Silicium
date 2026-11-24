@@ -20,6 +20,7 @@ gMemoryDescriptor[] = {
   {"UEFI FD",            0x9F800000, 0x00300000, AddMem, SYS_MEM, SYS_MEM_CAP, BsData, WRITE_BACK},
   {"UEFI Stack",         0x9FB00000, 0x00040000, AddMem, SYS_MEM, SYS_MEM_CAP, BsData, WRITE_BACK_XN},
   {"Info Blk",           0x9FB40000, 0x00001000, AddMem, SYS_MEM, SYS_MEM_CAP, RtData, WRITE_BACK_XN},
+  {"PStore",             0x17FE00000,0x00200000, AddMem, MEM_RES, SYS_MEM_CAP, Reserv, WRITE_THROUGH_XN},
 
   // Other Regions
   {"AOP_SS_MSG_RAM",     0x0C300000, 0x00100000, NoHob,  MMAP_IO, INITIALIZED, Conv,   NS_DEVICE},
