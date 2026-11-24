@@ -268,6 +268,8 @@
   SecureBootHandlerLib|SiliciumPkg/Library/SecureBootHandlerLib/SecureBootHandlerLib.inf
 !if $(ENABLE_SECUREBOOT) == 1
   AuthVariableLib|SecurityPkg/Library/AuthVariableLib/AuthVariableLib.inf
+  EcitEncodingLib|SecurityPkg/Library/EcitEncodingLib/EcitEncodingLib.inf
+  CryptoIndicatorRegistrationLib|SecurityPkg/Library/CryptoIndicatorRegistrationLib/CryptoIndicatorRegistrationLibNull.inf
 !else
   AuthVariableLib|MdeModulePkg/Library/AuthVariableLibNull/AuthVariableLibNull.inf
 !endif
