@@ -2,7 +2,7 @@ name: Build nabu normal images and PStore FDs
 
 on:
   push:
-    branches: ["nabu-Pstore"]
+    branches: ["nabu-Pstore-main"]
     paths:
       - '.github/workflows/nabu-pstore.yml'
       - 'Binaries'
@@ -16,7 +16,7 @@ on:
       - 'build_uefi.py'
       - 'setup_env.sh'
   pull_request:
-    branches: ["nabu-Pstore"]
+    branches: ["nabu-Pstore-main"]
     types: [opened, reopened, synchronize]
     paths:
       - '.github/workflows/nabu-pstore.yml'
@@ -33,46 +33,46 @@ on:
   workflow_dispatch:
 
 env:
-  CI_BUILD: true
+  CI_BUILD: false
   CLANGPDB_AARCH64_PREFIX: aarch64-linux-gnu-
   MAX_CONCURRENT_THREAD_NUMBER: 4
 
 jobs:
   build:
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - variant: sb
-            secureboot: true
-            output: img
-          - variant: nsb
-            secureboot: false
-            output: img
-          - variant: sb
-            secureboot: true
-            output: fd
-          - variant: nsb
-            secureboot: false
-            output: fd
-
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Set up build environment
+      - name: Set up build environment once
         run: bash ./setup_env.sh -p apt
 
-      - name: Remove PStore descriptor for normal image builds
-        if: matrix.output == 'img'
+      - name: Build all nabu variants sequentially
         run: |
-          python3 - <<'PY'
+          set -euo pipefail
+
+          MAP="Platforms/Xiaomi/nabuPkg/Library/MemoryMapLib/MemoryMapLib.c"
+          ORIG="$RUNNER_TEMP/MemoryMapLib.c.orig"
+          cp "$MAP" "$ORIG"
+          mkdir -p out
+
+          build_variant() {
+            local variant="$1"
+            local output="$2"
+            local secureboot="$3"
+
+            # Always start from the committed source, which contains PStore.
+            cp "$ORIG" "$MAP"
+
+            # Normal images must not contain the PStore descriptor.
+            if [[ "$output" == "img" ]]; then
+              python3 - "$MAP" <<'PY'
+          import sys
           from pathlib import Path
 
-          path = Path("Platforms/Xiaomi/nabuPkg/Library/MemoryMapLib/MemoryMapLib.c")
+          path = Path(sys.argv[1])
           lines = path.read_text().splitlines(keepends=True)
           kept = [line for line in lines if '"PStore"' not in line]
           removed = len(lines) - len(kept)
@@ -80,41 +80,64 @@ jobs:
               raise SystemExit(f"Expected exactly one PStore descriptor, found {removed}")
           path.write_text("".join(kept))
           PY
-
-      - name: Build nabu ${{ matrix.variant }} ${{ matrix.output }} (RELEASE)
-        run: |
-          set -euo pipefail
-          SB_ARGS=()
-          if [[ "${{ matrix.secureboot }}" == "true" ]]; then
-            SB_ARGS=(-s)
-          fi
-          python3 build_uefi.py -d nabu -r RELEASE -c "${SB_ARGS[@]}"
-
-      - name: Stage ${{ matrix.variant }} ${{ matrix.output }} artifact
-        id: stage
-        run: |
-          set -euo pipefail
-          OUT="out"
-          mkdir -p "$OUT"
-
-          if [[ "${{ matrix.output }}" == "img" ]]; then
-            cp Mu-nabu.img "$OUT/Mu-nabu-${{ matrix.variant }}.img"
-            echo "name=nabu-${{ matrix.variant }}-normal-uefi-img" >> "$GITHUB_OUTPUT"
-          else
-            if [[ "${{ matrix.variant }}" == "sb" ]]; then
-              FD_NAME="SM8150_EFI_PStore_SB.fd"
-            else
-              FD_NAME="SM8150_EFI_PStore_nSB.fd"
             fi
-            cp Build/nabuPkg/RELEASE_CLANGPDB/FV/SILICIUM_UEFI.fd "$OUT/$FD_NAME"
-            echo "name=nabu-pstore-${{ matrix.variant }}-fd" >> "$GITHUB_OUTPUT"
-          fi
 
-          (cd "$OUT" && sha256sum * > SHA256SUMS)
+            local SB_ARGS=()
+            if [[ "$secureboot" == "true" ]]; then
+              SB_ARGS=(-s)
+            fi
 
-      - name: Upload artifact
+            python3 build_uefi.py -d nabu -r RELEASE -c "${SB_ARGS[@]}"
+
+            local name
+            if [[ "$output" == "img" ]]; then
+              name="nabu-${variant}-normal-uefi-img"
+              mkdir -p "out/$name"
+              cp Mu-nabu.img "out/$name/Mu-nabu-${variant}.img"
+            else
+              name="nabu-pstore-${variant}-fd"
+              mkdir -p "out/$name"
+              local fd_name
+              if [[ "$variant" == "sb" ]]; then
+                fd_name="SM8150_EFI_PStore_SB.fd"
+              else
+                fd_name="SM8150_EFI_PStore_nSB.fd"
+              fi
+              cp Build/nabuPkg/RELEASE_CLANGPDB/FV/SILICIUM_UEFI.fd "out/$name/$fd_name"
+            fi
+
+            (cd "out/$name" && sha256sum * > SHA256SUMS)
+          }
+
+          build_variant sb  img true
+          build_variant nsb img false
+          build_variant sb  fd  true
+          build_variant nsb fd  false
+
+      - name: Upload SB normal image
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ steps.stage.outputs.name }}
-          path: out/*
+          name: nabu-sb-normal-uefi-img
+          path: out/nabu-sb-normal-uefi-img/*
+          compression-level: 9
+
+      - name: Upload nSB normal image
+        uses: actions/upload-artifact@v7
+        with:
+          name: nabu-nsb-normal-uefi-img
+          path: out/nabu-nsb-normal-uefi-img/*
+          compression-level: 9
+
+      - name: Upload SB PStore FD
+        uses: actions/upload-artifact@v7
+        with:
+          name: nabu-pstore-sb-fd
+          path: out/nabu-pstore-sb-fd/*
+          compression-level: 9
+
+      - name: Upload nSB PStore FD
+        uses: actions/upload-artifact@v7
+        with:
+          name: nabu-pstore-nsb-fd
+          path: out/nabu-pstore-nsb-fd/*
           compression-level: 9
