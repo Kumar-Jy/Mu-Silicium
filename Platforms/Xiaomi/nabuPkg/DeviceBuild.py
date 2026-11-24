@@ -31,6 +31,7 @@ class CommonPlatform ():
     WorkspaceRoot = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     PackagesPath = (
         "Platforms/Xiaomi",
+        "Platforms/Xiaomi/nabuPkg/ACPI",
         "Common/Mu",
         "Common/Mu_OEM_Sample",
         "Mu_Basecore",
