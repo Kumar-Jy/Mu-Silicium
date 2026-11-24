@@ -35,6 +35,7 @@ on:
 env:
   CI_BUILD: true
   CLANGPDB_AARCH64_PREFIX: aarch64-linux-gnu-
+  MAX_CONCURRENT_THREAD_NUMBER: 4
 
 jobs:
   build:
