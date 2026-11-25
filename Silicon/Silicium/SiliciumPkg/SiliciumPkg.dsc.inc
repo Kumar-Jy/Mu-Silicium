@@ -268,7 +268,9 @@
   SecureBootHandlerLib|SiliciumPkg/Library/SecureBootHandlerLib/SecureBootHandlerLib.inf
 !if $(ENABLE_SECUREBOOT) == 1
   AuthVariableLib|SecurityPkg/Library/AuthVariableLib/AuthVariableLib.inf
+  AuthenticodeLib|SecurityPkg/Library/BaseAuthenticodeLib/BaseAuthenticodeLib.inf
   EcitEncodingLib|SecurityPkg/Library/EcitEncodingLib/EcitEncodingLib.inf
+  ImageSecureBootVerificationResultTableLib|SecurityPkg/Library/ImageSecureBootVerificationResultTableLib/ImageSecureBootVerificationResultTableLib.inf
   CryptoIndicatorRegistrationLib|SecurityPkg/Library/CryptoIndicatorRegistrationLib/CryptoIndicatorRegistrationLibNull.inf
 !else
   AuthVariableLib|MdeModulePkg/Library/AuthVariableLibNull/AuthVariableLibNull.inf
@@ -361,14 +363,26 @@
   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
   ReportStatusCodeLib|MdeModulePkg/Library/DxeReportStatusCodeLib/DxeReportStatusCodeLib.inf
   SecurityManagementLib|MdeModulePkg/Library/DxeSecurityManagementLib/DxeSecurityManagementLib.inf
+!if $(ENABLE_SECUREBOOT) == 1
+  BaseCryptLib|CryptoPkg/Library/BaseCryptLibOnOneCrypto/DxeCryptLib.inf
+  TlsLib|CryptoPkg/Library/BaseCryptLibOnOneCrypto/DxeCryptLib.inf
+!endif
 
 [LibraryClasses.common.UEFI_APPLICATION]
   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
   ReportStatusCodeLib|MdeModulePkg/Library/DxeReportStatusCodeLib/DxeReportStatusCodeLib.inf
+!if $(ENABLE_SECUREBOOT) == 1
+  BaseCryptLib|CryptoPkg/Library/BaseCryptLibOnOneCrypto/DxeCryptLib.inf
+  TlsLib|CryptoPkg/Library/BaseCryptLibOnOneCrypto/DxeCryptLib.inf
+!endif
 
 [LibraryClasses.common.UEFI_DRIVER]
   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
   ReportStatusCodeLib|MdeModulePkg/Library/DxeReportStatusCodeLib/DxeReportStatusCodeLib.inf
+!if $(ENABLE_SECUREBOOT) == 1
+  BaseCryptLib|CryptoPkg/Library/BaseCryptLibOnOneCrypto/DxeCryptLib.inf
+  TlsLib|CryptoPkg/Library/BaseCryptLibOnOneCrypto/DxeCryptLib.inf
+!endif
 
 [LibraryClasses.common.DXE_RUNTIME_DRIVER]
 !if $(ENABLE_SECUREBOOT) == 1
@@ -424,6 +438,11 @@
   # DXE
   #
   MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
+!if $(ENABLE_SECUREBOOT) == 1
+  $(ONE_CRYPTO_PATH)/$(TARGET)/AARCH64/OneCryptoBin/OneCryptoBinDxe.inf
+  $(ONE_CRYPTO_PATH)/$(TARGET)/AARCH64/OneCryptoLoaders/OneCryptoLoaderDxe.inf
+!endif
+
   MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf {
     <LibraryClasses>
 !if $(ENABLE_SECUREBOOT) == 1

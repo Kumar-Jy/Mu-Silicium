@@ -54,9 +54,11 @@
   Pk/CryptPkcs7VerifyCommon.c
   Pk/CryptPkcs7VerifyRuntime.c
   Pk/CryptPkcs7VerifyEkuRuntime.c
+  Pk/CryptRuntimeCompat.c
   Pk/CryptDhNull.c
   Pk/CryptX509.c
   Pk/CryptAuthenticodeNull.c
+  Info/CryptOpCapability.c
   Pk/CryptTsNull.c
   Pk/CryptRsaPssNull.c
   Pk/CryptRsaPssSignNull.c
